@@ -1,0 +1,36 @@
+{
+  "name": "pi-jump",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pi extension: a /tree-style index of every conversation stop that jumps the fullscreen transcript as you move",
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/jump.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "link-pi": "sh scripts/link-pi.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^24.0.0"
+  }
+}
