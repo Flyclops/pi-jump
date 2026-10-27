@@ -36,10 +36,43 @@ Note: in terminals without the kitty keyboard protocol, `ctrl+shift+j` may be in
 
 ## Install
 
+Not published to npm; install from GitHub or a local clone.
+
+**From GitHub** (pi clones it and keeps it updated):
+
 ```bash
-pi -e ./extensions/jump.ts   # try it for one session
-pi install ./                # or install this directory as a local package
+pi install git:github.com/Flyclops/pi-jump            # track main
+pi install git:github.com/Flyclops/pi-jump@<tag|sha>  # pin a version
+pi install https://github.com/Flyclops/pi-jump        # same as git:, by URL
 ```
+
+**From a local clone** (loaded in place, not copied; edits apply after `/reload` or a new session):
+
+```bash
+git clone https://github.com/Flyclops/pi-jump.git
+pi install ./pi-jump
+```
+
+**For one project only:** add `-l` / `--local` to any `pi install` above. It's then recorded in that project's `.pi/settings.json` instead of `~/.pi/agent/settings.json`, and loads only after you trust the project.
+
+**Try without installing** (one session only):
+
+```bash
+pi -e git:github.com/Flyclops/pi-jump
+pi -e ./pi-jump/extensions/jump.ts
+```
+
+Don't combine `-e` with an installed copy, or `/jump` registers twice.
+
+**Manage:**
+
+```bash
+pi list                                           # show installed packages
+pi update git:github.com/Flyclops/pi-jump         # pull the latest (unpinned installs)
+pi remove git:github.com/Flyclops/pi-jump         # uninstall
+```
+
+Then run `/reload` in open sessions, or start a new one.
 
 ## Develop
 
