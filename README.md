@@ -59,7 +59,7 @@ pi install ./pi-jump
 
 ```bash
 pi -e git:github.com/Flyclops/pi-jump
-pi -e ./pi-jump/extensions/jump.ts
+pi -e ./pi-jump/extensions/pi-jump.ts
 ```
 
 Don't combine `-e` with an installed copy, or `/jump` registers twice.
@@ -85,7 +85,7 @@ npm test             # node --test; Node ≥ 23 runs the .ts files directly
 
 Layout:
 
-- `extensions/jump.ts`: entry; registers `/jump` and `ctrl+shift+j`.
+- `extensions/pi-jump.ts`: entry; registers `/jump` and `ctrl+shift+j`.
 - `src/stops.ts`: pure logic. Recognises pi's transcript components by shape and turns them into stops with rows. Unit-tested with fake components.
 - `src/adapter.ts`: **the only file that touches pi internals.**
 - `src/overlay.ts`: the bottom-overlay list component.
