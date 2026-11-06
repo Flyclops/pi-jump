@@ -78,9 +78,9 @@ Then run `/reload` in open sessions, or start a new one.
 
 ```bash
 npm install          # typescript only; pi packages are NOT installed (pi supplies them)
-npm run link-pi      # symlink the installed pi's packages to .pi-host/ for types
+npm run link-pi      # symlink the installed pi's packages to .pi-host/ (types, and pi-tui for tests)
 npm run typecheck
-npm test             # node --test; Node ≥ 23 runs the .ts files directly
+npm test             # node --test; Node ≥ 23 runs the .ts files directly (erasable TS syntax only)
 ```
 
 Layout:

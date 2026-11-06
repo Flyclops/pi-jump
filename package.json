@@ -13,7 +13,7 @@
     ]
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --import ./test/support/pi-host.ts --test 'test/*.test.ts'",
     "link-pi": "sh scripts/link-pi.sh",
     "typecheck": "tsc --noEmit"
   },

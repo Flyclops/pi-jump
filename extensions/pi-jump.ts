@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { locateTranscript } from "../src/adapter.ts";
-import { HEIGHT_FRACTION, JumpOverlay } from "../src/overlay.ts";
+import { JumpOverlay, OVERLAY_OPTIONS } from "../src/overlay.ts";
 
 export default function (pi: ExtensionAPI) {
 	const open = async (ctx: ExtensionContext) => {
@@ -26,10 +26,7 @@ export default function (pi: ExtensionAPI) {
 					ctx.ui.notify(m, "error"),
 				);
 			},
-			{
-				overlay: true,
-				overlayOptions: { anchor: "bottom-center", width: "100%", maxHeight: `${HEIGHT_FRACTION * 100}%` },
-			},
+			{ overlay: true, overlayOptions: OVERLAY_OPTIONS },
 		);
 	};
 

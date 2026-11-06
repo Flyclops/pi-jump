@@ -31,21 +31,36 @@ interface TuiLike {
 	requestRender(): void;
 }
 
+/** Overlay placement. The component sizes itself (see `height()`), so no maxHeight: it would clip the key hint. */
+export const OVERLAY_OPTIONS = { anchor: "bottom-center", width: "100%" } as const;
+
 export class JumpOverlay {
+	private readonly tui: TuiLike;
+	private readonly theme: Theme;
+	private readonly keybindings: KeybindingsManager;
+	private stops: Stop[];
+	private readonly done: (result: void) => void;
+	private readonly notify: (message: string) => void;
 	private selected: number;
 	private top = 0;
-	private cache?: { width: number; lines: string[] };
+	private cache?: { width: number; height: number; lines: string[] };
 	private timer: ReturnType<typeof setInterval>;
 	private sig: string;
 
 	constructor(
-		private readonly tui: TuiLike,
-		private readonly theme: Theme,
-		private readonly keybindings: KeybindingsManager,
-		private stops: Stop[],
-		private readonly done: (result: void) => void,
-		private readonly notify: (message: string) => void,
+		tui: TuiLike,
+		theme: Theme,
+		keybindings: KeybindingsManager,
+		stops: Stop[],
+		done: (result: void) => void,
+		notify: (message: string) => void,
 	) {
+		this.tui = tui;
+		this.theme = theme;
+		this.keybindings = keybindings;
+		this.stops = stops;
+		this.done = done;
+		this.notify = notify;
 		// Start on the newest stop, but do not jump until the user moves.
 		this.selected = Math.max(0, stops.length - 1);
 		this.sig = signature(stops);
@@ -80,9 +95,10 @@ export class JumpOverlay {
 		}
 	}
 
+	/** Total lines rendered: a fraction of the terminal, at least MIN_HEIGHT, never more than the terminal. */
 	private height(): number {
-		const rows = this.tui.terminal?.rows ?? 24;
-		return Math.max(MIN_HEIGHT, Math.floor(rows * HEIGHT_FRACTION));
+		const rows = Math.max(1, this.tui.terminal?.rows ?? 24);
+		return Math.min(rows, Math.max(MIN_HEIGHT, Math.floor(rows * HEIGHT_FRACTION)));
 	}
 
 	private listRows(): number {
@@ -135,7 +151,8 @@ export class JumpOverlay {
 	}
 
 	render(width: number): string[] {
-		if (this.cache && this.cache.width === width) return this.cache.lines;
+		const height = this.height();
+		if (this.cache && this.cache.width === width && this.cache.height === height) return this.cache.lines;
 		const th = this.theme;
 		const rows = this.listRows();
 
@@ -144,7 +161,13 @@ export class JumpOverlay {
 		this.top = Math.max(0, Math.min(this.top, Math.max(0, this.stops.length - rows)));
 
 		const title = ` jump · ${this.selected + 1}/${this.stops.length} `;
-		const lines: string[] = [th.fg("border", "─") + th.fg("accent", title) + th.fg("border", "─".repeat(Math.max(0, width - visibleWidth(title) - 1)))];
+		const lines: string[] = [
+			truncateToWidth(
+				th.fg("border", "─") + th.fg("accent", title) + th.fg("border", "─".repeat(Math.max(0, width - visibleWidth(title) - 1))),
+				width,
+				"",
+			),
+		];
 
 		for (let i = 0; i < rows; i++) {
 			const stop = this.stops[this.top + i];
@@ -168,8 +191,10 @@ export class JumpOverlay {
 			lines.push(line);
 		}
 
-		lines.push(truncateToWidth(th.fg("dim", " ↑↓ step · ←→ user msgs · enter/esc close"), width));
-		this.cache = { width, lines };
-		return lines;
+		const hint = truncateToWidth(th.fg("dim", " ↑↓ step · ←→ user msgs · enter/esc close"), width);
+		// Below 3 rows there is no room for title + list + hint: drop the title first, then the list.
+		const out = [...lines.slice(Math.max(0, lines.length - (height - 1))), hint];
+		this.cache = { width, height, lines: out };
+		return out;
 	}
 }
