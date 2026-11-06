@@ -21,7 +21,7 @@ A `/tree`-style index of every stop in the current pi conversation, in a bottom 
 | `←` / `→` | Jump to the previous / next user message, skipping the entries under it |
 | `enter` / `esc` | Close, leaving the transcript where it is |
 
-Stops: user messages `›`, skill invocations `✦`, thinking `∴` (one per run of consecutive thinking blocks), assistant text `◆`, tool calls `⚙` (scroll down from a call to see its result), `!bash` executions `$`, compaction summaries `≡`, branch summaries `↳` (from `/tree` branch switches), and visible extension messages `◇` (labelled with their message type, e.g. `◇ subagent`). The startup header is skipped.
+Stops: user messages `›`, skill invocations `✦`, thinking `∴` (one per run of consecutive thinking blocks; a hidden run shows its hidden-thinking label, or is skipped when that label is empty), assistant text `◆`, tool calls `⚙` (scroll down from a call to see its result), `!bash` executions `$`, compaction summaries `≡`, branch summaries `↳` (from `/tree` branch switches), and visible extension messages `◇` (labelled with their message type, e.g. `◇ subagent`). The startup header is skipped.
 
 The list updates live (every 250 ms) as background work adds stops. The highlight stays on the same stop. Each jump also recalculates the target row first, so it stays accurate while the agent streams.
 
@@ -97,7 +97,7 @@ Read-only, all in `src/adapter.ts` and `src/stops.ts` (verified against pi 1.4.0
 - `TuiAltScreen.getPrimaryScrollView()` and `TuiAltScreen.currentLayout`: TypeScript-`private`, reachable at runtime.
 - Layout frame: the box whose `scrollView` is the primary scroll view; its first child's `component` is pi's document container, and its `rect.width` is the transcript content width.
 - Document container children: `[header, loadedResources, chatContainer]`.
-- Component shapes: tool executions (`toolCallId`, `toolName`, `args`), assistant messages (`contentContainer`, `lastMessage`, `hasToolCalls`), user messages (`text`, `markdownTransformers`), skill invocations (`skillBlock`), bash executions (`command`, `outputLines`), compaction summaries, branch summaries and extension messages (`message.role` of `"compactionSummary"`, `"branchSummary"`, `"custom"`).
+- Component shapes: tool executions (`toolCallId`, `toolName`, `args`), assistant messages (`contentContainer`, `lastMessage`, `hasToolCalls`, and `hideThinkingBlock`, `hiddenThinkingLabel`, `thinkingVisibilityOverrides` for which thinking runs are drawn), user messages (`text`, `markdownTransformers`), skill invocations (`skillBlock`), bash executions (`command`, `outputLines`), compaction summaries, branch summaries and extension messages (`message.role` of `"compactionSummary"`, `"branchSummary"`, `"custom"`).
 - Scrolling uses the scroll view's own `scrollTo(row, { disableFollow: true })`, as pi's transcript search does.
 
 ## Proposed public API

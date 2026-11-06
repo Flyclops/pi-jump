@@ -22,9 +22,9 @@ function tool(name: string, args: unknown, height = 4): ComponentLike {
 	// pi: Spacer(1) then a padded box
 	return { toolName: name, toolCallId: `id-${name}`, args, render: () => ["", ...lines(height - 1)] };
 }
-function assistant(content: unknown[], parts: ComponentLike[]): ComponentLike {
+function assistant(content: unknown[], parts: ComponentLike[], extra: Record<string, unknown> = {}): ComponentLike {
 	const contentContainer = box(parts);
-	return box([contentContainer], { contentContainer, hasToolCalls: false, lastMessage: { content } });
+	return box([contentContainer], { contentContainer, hasToolCalls: false, lastMessage: { content }, ...extra });
 }
 
 // ---- tests ----
@@ -105,6 +105,44 @@ test("collectStops handles bash, compaction, skill, custom, branch, hidden and u
 			["custom", "plain string", 0, 14],
 			["branch", "Tried approach A", 0, 15],
 			["tool", "foo", 0, 19], // branch summary ends the turn
+		],
+	);
+});
+
+test("collectStops follows pi's thinking visibility: unlabelled hidden runs render nothing", () => {
+	const content = [
+		{ type: "thinking", thinking: "secret plan" },
+		{ type: "text", text: "first answer" },
+		{ type: "thinking", thinking: "second thought" },
+		{ type: "text", text: "second answer" },
+	];
+	// hideThinkingBlock with an empty label: pi draws no child (and no spacer) for either thinking run.
+	const hidden = assistant(content, [spacer(), leaf(["first answer"]), leaf(["second answer"])], {
+		hideThinkingBlock: true,
+		hiddenThinkingLabel: "",
+		thinkingVisibilityOverrides: new Map(),
+	});
+	assert.deepEqual(
+		collectStops(box([hidden]), 80, 0).map((s) => [s.kind, s.preview, s.row, s.blockIndex]),
+		[
+			["text", "first answer", 1, 1],
+			["text", "second answer", 2, 3],
+		],
+	);
+
+	// A per-run override (clicking the run) shows the second run again; a hidden run with a label shows the label.
+	const mixed = assistant(
+		content,
+		[spacer(), leaf(["Thinking..."]), spacer(), leaf(["first answer"]), leaf(["second thought"]), spacer(), leaf(["second answer"])],
+		{ hideThinkingBlock: true, hiddenThinkingLabel: "Thinking...", thinkingVisibilityOverrides: new Map([[1, false]]) },
+	);
+	assert.deepEqual(
+		collectStops(box([mixed]), 80, 0).map((s) => [s.kind, s.preview, s.row]),
+		[
+			["thinking", "Thinking...", 1],
+			["text", "first answer", 3],
+			["thinking", "second thought", 4],
+			["text", "second answer", 6],
 		],
 	);
 });

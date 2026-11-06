@@ -31,6 +31,15 @@ export interface Stop {
 
 type Block = { kind: "text" | "thinking"; text: string };
 
+/** How pi's AssistantMessageComponent decides whether (and how) each thinking run is drawn. */
+export interface ThinkingVisibility {
+	hide: boolean;
+	/** Drawn in place of a hidden run; an empty label means a hidden run draws nothing. */
+	label: string;
+	/** Per-run toggles (keyed by thinking-run index) that override `hide`. */
+	overrides?: ReadonlyMap<number, boolean>;
+}
+
 interface AssistantMessageLike {
 	content: Array<{ type: string; text?: string; thinking?: string }>;
 }
@@ -45,11 +54,39 @@ export function firstLine(text: string): string {
 }
 
 /**
- * Visible blocks of an assistant message, in the same order and grouping that pi's
+ * Content blocks of an assistant message, in the same order and grouping that pi's
  * AssistantMessageComponent renders them: non-empty text blocks individually, and each run
- * of consecutive thinking blocks as one block (empty ones dropped).
+ * of consecutive thinking blocks as one block (empty ones dropped). Ignores thinking
+ * visibility; see `visibleBlocks`.
  */
 export function assistantBlocks(message: AssistantMessageLike): Block[] {
+	return visibleBlocks(message).map(({ kind, text }) => ({ kind, text }));
+}
+
+/**
+ * The blocks pi actually draws, with each one's index in `assistantBlocks` (stable across
+ * visibility toggles). Hidden thinking runs show their label, or nothing when it is empty.
+ */
+export function visibleBlocks(
+	message: AssistantMessageLike,
+	visibility: ThinkingVisibility = { hide: false, label: "" },
+): Array<Block & { index: number }> {
+	const out: Array<Block & { index: number }> = [];
+	let run = 0;
+	allBlocks(message).forEach((block, index) => {
+		if (block.kind === "thinking") {
+			const hidden = visibility.overrides?.get(run++) ?? visibility.hide;
+			if (hidden) {
+				if (visibility.label.trim()) out.push({ kind: "thinking", text: visibility.label, index });
+				return;
+			}
+		}
+		out.push({ ...block, index });
+	});
+	return out;
+}
+
+function allBlocks(message: AssistantMessageLike): Block[] {
 	const blocks: Block[] = [];
 	const content = message.content ?? [];
 	for (let i = 0; i < content.length; i++) {
@@ -205,7 +242,12 @@ function collectAssistant(child: ComponentLike, width: number, row: number, dept
 	const message = child.lastMessage as AssistantMessageLike | undefined;
 	const content = child.contentContainer as ComponentLike | undefined;
 	if (!message || !content) return;
-	const blocks = assistantBlocks(message);
+	const overrides = child.thinkingVisibilityOverrides;
+	const blocks = visibleBlocks(message, {
+		hide: child.hideThinkingBlock === true,
+		label: str(child.hiddenThinkingLabel) ?? "",
+		overrides: overrides instanceof Map ? overrides : undefined,
+	});
 	// The assistant component may render content above contentContainer; locate it among its children.
 	let offset = row;
 	for (const c of child.children ?? []) {
@@ -224,7 +266,7 @@ function collectAssistant(child: ComponentLike, width: number, row: number, dept
 				depth,
 				row: offset,
 				component: child,
-				blockIndex: next,
+				blockIndex: block.index,
 			});
 			next++;
 		}
