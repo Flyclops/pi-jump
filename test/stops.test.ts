@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { locateTranscript } from "../src/adapter.ts";
 import { assistantBlocks, collectStops, type ComponentLike, firstLine, nextTurn, refind, type Stop } from "../src/stops.ts";
 
-// ---- fakes shaped like pi 7.x transcript components ----
+// ---- fakes shaped like pi 1.5.0 transcript components ----
 
 const lines = (n: number, text = "x"): string[] => Array.from({ length: n }, () => text);
 

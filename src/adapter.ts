@@ -1,8 +1,10 @@
 /**
- * The ONLY file that touches pi internals. Everything here is read-only, except calling the
- * transcript ScrollView's own scroll methods (the same ones pi's transcript search uses).
+ * The only file that reaches into pi's TUI and layout internals. Everything here is read-only,
+ * except calling the transcript ScrollView's own scroll methods (as pi's transcript search does).
+ * The other internals dependency is the shape of pi's transcript components, which `stops.ts`
+ * duck-types; that is the likelier part to break on a pi upgrade.
  *
- * Internals relied on (pi 7.x):
+ * Internals relied on (verified against pi 1.5.0):
  *   - tui.getPrimaryScrollView()            (TS-private on TuiAltScreen)
  *   - tui.currentLayout                     (TS-private; last rendered layout frame)
  *   - layout box { scrollView, children[0] = { component: documentContainer, rect } }
@@ -13,7 +15,6 @@
 import { collectStops, type ComponentLike, type Stop } from "./stops.ts";
 
 export interface ScrollViewLike {
-	scrollTop: number;
 	scrollTo(row: number, options?: { disableFollow?: boolean }): void;
 }
 
@@ -22,7 +23,6 @@ interface LayoutBox {
 	rect?: { width: number };
 	children?: LayoutBox[];
 	scrollView?: unknown;
-	scrollContentLines?: string[];
 }
 
 export interface Transcript {
@@ -51,7 +51,7 @@ function isComponent(v: unknown): v is ComponentLike {
 /** Pick pi's chatContainer out of the document container's children. */
 function findChat(document: ComponentLike): { chat: ComponentLike; index: number } | undefined {
 	const kids = document.children ?? [];
-	// pi 7.x: [header, loadedResources, chat]. Fall back to the child with the most children.
+	// pi 1.5.0: [header, loadedResources, chat]. Fall back to the child with the most children.
 	if (kids.length === 3 && isComponent(kids[2])) return { chat: kids[2], index: 2 };
 	let best = -1;
 	for (let i = 0; i < kids.length; i++) {

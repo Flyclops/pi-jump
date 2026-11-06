@@ -23,9 +23,9 @@ A `/tree`-style index of every stop in the current pi conversation, in a bottom 
 
 Stops: user messages `›`, skill invocations `✦`, thinking `∴` (one per run of consecutive thinking blocks; a hidden run shows its hidden-thinking label, or is skipped when that label is empty), assistant text `◆`, tool calls `⚙` (scroll down from a call to see its result), `!bash` executions `$`, compaction summaries `≡`, branch summaries `↳` (from `/tree` branch switches), and visible extension messages `◇` (labelled with their message type, e.g. `◇ subagent`). The startup header is skipped.
 
-The list updates live (every 250 ms) as background work adds stops. The highlight stays on the same stop. Each jump also recalculates the target row first, so it stays accurate while the agent streams.
+The list updates live as the agent works (within 250 ms of activity, plus a 2 s backup poll for changes no event announces, such as extension messages). The highlight stays on the same stop. Each jump also recalculates the target row first, so it stays accurate while the agent streams.
 
-Tuning constants live at the top of `src/overlay.ts`: `HEIGHT_FRACTION` (0.35), `TOP_PADDING` (1), `REFRESH_MS` (250).
+Tuning constants live at the top of `src/overlay.ts`: `HEIGHT_FRACTION` (0.35), `MIN_HEIGHT` (6), `TOP_PADDING` (1), `REFRESH_MS` (250), `IDLE_REFRESH_MS` (2000).
 
 Note: in terminals without the kitty keyboard protocol, `ctrl+shift+j` may be indistinguishable from `ctrl+j` (newline). Use `/jump` there.
 
@@ -85,14 +85,14 @@ npm test             # node --test; Node ≥ 23 runs the .ts files directly (era
 
 Layout:
 
-- `extensions/pi-jump.ts`: entry; registers `/jump` and `ctrl+shift+j`.
+- `extensions/pi-jump.ts`: entry; registers `/jump` and `ctrl+shift+j`, refreshes the open list on agent events, and closes it on session shutdown.
 - `src/stops.ts`: pure logic. Recognises pi's transcript components by shape and turns them into stops with rows. Unit-tested with fake components.
-- `src/adapter.ts`: **the only file that touches pi internals.**
+- `src/adapter.ts`: **the only file that reaches into pi's TUI and layout internals.** (`src/stops.ts` duck-types pi's internal component shapes.)
 - `src/overlay.ts`: the bottom-overlay list component.
 
 ## Pi internals relied on
 
-Read-only, all in `src/adapter.ts` and `src/stops.ts` (verified against pi 1.4.0):
+Read-only, all in `src/adapter.ts` and `src/stops.ts` (verified against pi 1.5.0):
 
 - `TuiAltScreen.getPrimaryScrollView()` and `TuiAltScreen.currentLayout`: TypeScript-`private`, reachable at runtime.
 - Layout frame: the box whose `scrollView` is the primary scroll view; its first child's `component` is pi's document container, and its `rect.width` is the transcript content width.

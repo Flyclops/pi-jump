@@ -19,8 +19,12 @@ export const HEIGHT_FRACTION = 0.35;
 export const MIN_HEIGHT = 6;
 /** Lines of context kept above a jumped-to stop. */
 export const TOP_PADDING = 1;
-/** How often the open list re-reads the transcript to pick up new work. */
+/** Delay (and minimum spacing) for a refresh triggered by agent activity; a burst of events coalesces into one. */
 export const REFRESH_MS = 250;
+/** Backup poll for changes no event announces (e.g. extension messages). Each refresh re-renders the transcript. */
+export const IDLE_REFRESH_MS = 2000;
+/** Display columns given to a stop's label. */
+const LABEL_WIDTH = 8;
 
 function signature(stops: Stop[]): string {
 	return stops.map((s) => `${s.kind}\u0000${s.depth}\u0000${s.label}\u0000${s.preview}`).join("\u0001");
@@ -44,7 +48,10 @@ export class JumpOverlay {
 	private selected: number;
 	private top = 0;
 	private cache?: { width: number; height: number; lines: string[] };
-	private timer: ReturnType<typeof setInterval>;
+	private readonly timer: ReturnType<typeof setInterval>;
+	private pending?: ReturnType<typeof setTimeout>;
+	private disposed = false;
+	private closed = false;
 	private sig: string;
 
 	constructor(
@@ -64,11 +71,30 @@ export class JumpOverlay {
 		// Start on the newest stop, but do not jump until the user moves.
 		this.selected = Math.max(0, stops.length - 1);
 		this.sig = signature(stops);
-		this.timer = setInterval(() => this.refresh(), REFRESH_MS);
+		this.timer = setInterval(() => this.refresh(), IDLE_REFRESH_MS);
+	}
+
+	/** End the interaction (e.g. on session shutdown). pi then calls dispose(). */
+	close(): void {
+		if (this.closed) return;
+		this.closed = true;
+		this.done();
 	}
 
 	dispose(): void {
+		this.disposed = true;
 		clearInterval(this.timer);
+		clearTimeout(this.pending);
+		this.pending = undefined;
+	}
+
+	/** The transcript may have changed (agent activity): refresh once, REFRESH_MS from the first request. */
+	scheduleRefresh(): void {
+		if (this.disposed || this.pending) return;
+		this.pending = setTimeout(() => {
+			this.pending = undefined;
+			this.refresh();
+		}, REFRESH_MS);
 	}
 
 	/** Pick up stops added (or previews changed) by background work while the list is open. */
@@ -111,7 +137,7 @@ export class JumpOverlay {
 		let next = this.selected;
 
 		if (kb.matches(data, "tui.select.cancel") || kb.matches(data, "tui.select.confirm")) {
-			this.done();
+			this.close();
 			return;
 		} else if (kb.matches(data, "tui.select.up")) next--;
 		else if (kb.matches(data, "tui.select.down")) next++;
@@ -178,7 +204,8 @@ export class JumpOverlay {
 			const isSel = this.top + i === this.selected;
 			const indent = "  ".repeat(stop.depth);
 			const marker = MARKERS[stop.kind];
-			const label = stop.label.length > 8 ? stop.label.slice(0, 8) : stop.label.padEnd(8);
+			const cut = truncateToWidth(stop.label, LABEL_WIDTH, "");
+			const label = cut + " ".repeat(Math.max(0, LABEL_WIDTH - visibleWidth(cut)));
 			const plain = `${isSel ? "▸" : " "}${indent}${marker} ${label} `;
 			let line = isSel
 				? th.fg("accent", plain) + th.fg("text", stop.preview)
