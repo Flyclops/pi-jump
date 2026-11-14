@@ -1,5 +1,5 @@
 import type { KeybindingsManager, Theme } from "@earendil-works/pi-coding-agent";
-import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { type KeyId, matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { locateTranscript, scrollToRow } from "./adapter.ts";
 import { nextTurn, refind, type Stop, type StopKind } from "./stops.ts";
 
@@ -136,6 +136,10 @@ export class JumpOverlay {
 		const last = this.stops.length - 1;
 		let next = this.selected;
 
+		// pi's configurable select keys are checked first so a user's binding
+		// always wins; the fixed keys below (arrows, home/end and the
+		// vim/less aliases k/j, {/}, g/G, q) are fallbacks.
+		const key = (...ids: KeyId[]) => ids.some((id) => matchesKey(data, id));
 		if (kb.matches(data, "tui.select.cancel") || kb.matches(data, "tui.select.confirm")) {
 			this.close();
 			return;
@@ -143,10 +147,15 @@ export class JumpOverlay {
 		else if (kb.matches(data, "tui.select.down")) next++;
 		else if (kb.matches(data, "tui.select.pageUp")) next -= this.listRows();
 		else if (kb.matches(data, "tui.select.pageDown")) next += this.listRows();
-		else if (matchesKey(data, "left")) next = nextTurn(this.stops, this.selected, -1);
-		else if (matchesKey(data, "right")) next = nextTurn(this.stops, this.selected, 1);
-		else if (matchesKey(data, "home")) next = 0;
-		else if (matchesKey(data, "end")) next = last;
+		else if (key("q")) {
+			this.close();
+			return;
+		} else if (key("k")) next--;
+		else if (key("j")) next++;
+		else if (key("left", "{")) next = nextTurn(this.stops, this.selected, -1);
+		else if (key("right", "}")) next = nextTurn(this.stops, this.selected, 1);
+		else if (key("home", "g")) next = 0;
+		else if (key("end", "shift+g")) next = last;
 		else return;
 
 		next = Math.max(0, Math.min(last, next));
@@ -218,7 +227,7 @@ export class JumpOverlay {
 			lines.push(line);
 		}
 
-		const hint = truncateToWidth(th.fg("dim", " ↑↓ step · ←→ user msgs · enter/esc close"), width);
+		const hint = truncateToWidth(th.fg("dim", " ↑↓/jk step · ←→/{} user msgs · g/G ends · enter/esc/q close"), width);
 		// Below 3 rows there is no room for title + list + hint: drop the title first, then the list.
 		const out = [...lines.slice(Math.max(0, lines.length - (height - 1))), hint];
 		this.cache = { width, height, lines: out };
