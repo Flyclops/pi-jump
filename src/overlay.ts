@@ -136,16 +136,22 @@ export class JumpOverlay {
 		const last = this.stops.length - 1;
 		let next = this.selected;
 
-		// Vim/less-style aliases sit beside pi's configurable select keys:
-		// k/j step, {/} user messages, g/G first/last, q close.
+		// pi's configurable select keys are checked first so a user's binding
+		// always wins; the fixed keys below (arrows, home/end and the
+		// vim/less aliases k/j, {/}, g/G, q) are fallbacks.
 		const key = (...ids: KeyId[]) => ids.some((id) => matchesKey(data, id));
-		if (kb.matches(data, "tui.select.cancel") || kb.matches(data, "tui.select.confirm") || key("q")) {
+		if (kb.matches(data, "tui.select.cancel") || kb.matches(data, "tui.select.confirm")) {
 			this.close();
 			return;
-		} else if (kb.matches(data, "tui.select.up") || key("k")) next--;
-		else if (kb.matches(data, "tui.select.down") || key("j")) next++;
+		} else if (kb.matches(data, "tui.select.up")) next--;
+		else if (kb.matches(data, "tui.select.down")) next++;
 		else if (kb.matches(data, "tui.select.pageUp")) next -= this.listRows();
 		else if (kb.matches(data, "tui.select.pageDown")) next += this.listRows();
+		else if (key("q")) {
+			this.close();
+			return;
+		} else if (key("k")) next--;
+		else if (key("j")) next++;
 		else if (key("left", "{")) next = nextTurn(this.stops, this.selected, -1);
 		else if (key("right", "}")) next = nextTurn(this.stops, this.selected, 1);
 		else if (key("home", "g")) next = 0;

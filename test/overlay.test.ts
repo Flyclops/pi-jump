@@ -178,3 +178,18 @@ test("q closes", () => {
 	o.handleInput("q");
 	assert.equal(closed, 1);
 });
+
+test("configured select bindings win over the vim aliases", () => {
+	// The user has rebound select.down to "k" and select.up to "q".
+	const bound: Record<string, string> = { "tui.select.down": "k", "tui.select.up": "q" };
+	const kb = { matches: (data: string, action: string) => bound[action] === data };
+	let closed = 0;
+	const o = new JumpOverlay(fakeTui(24) as never, theme as never, kb as never, TWO_TURNS, () => closed++, () => {});
+	o.dispose();
+	o.handleInput("g");
+	o.handleInput("k");
+	assert.equal(position(o), "2/6", "k follows the select.down binding");
+	o.handleInput("q");
+	assert.equal(position(o), "1/6", "q follows the select.up binding");
+	assert.equal(closed, 0);
+});
