@@ -136,3 +136,45 @@ test("a height-only resize re-sizes the list instead of reusing the cached frame
 	assert.ok(short < tall, `expected fewer lines after shrinking (${tall} -> ${short})`);
 	assert.ok(short <= 8);
 });
+
+// Position shown in the title, e.g. "3/5".
+function position(o: JumpOverlay): string {
+	return /(\d+\/\d+)/.exec(o.render(80)[0]!)![1]!;
+}
+
+const TWO_TURNS = [...STOPS, stop("user", "user", "now the docs"), stop("text", "text", "Done", 1)];
+
+test("g/home go to the first stop; G/end go to the last", () => {
+	const o = overlay(fakeTui(24), TWO_TURNS);
+	for (const [first, last] of [
+		["g", "G"],
+		["\x1b[H", "\x1b[F"],
+	] as const) {
+		o.handleInput(first);
+		assert.equal(position(o), "1/6", `${JSON.stringify(first)} -> first`);
+		o.handleInput(last);
+		assert.equal(position(o), "6/6", `${JSON.stringify(last)} -> last`);
+	}
+});
+
+test("k/j step one stop; {/} move between user messages", () => {
+	const o = overlay(fakeTui(24), TWO_TURNS);
+	o.handleInput("k");
+	assert.equal(position(o), "5/6");
+	o.handleInput("j");
+	assert.equal(position(o), "6/6");
+	o.handleInput("{");
+	assert.equal(position(o), "5/6");
+	o.handleInput("{");
+	assert.equal(position(o), "1/6");
+	o.handleInput("}");
+	assert.equal(position(o), "5/6");
+});
+
+test("q closes", () => {
+	let closed = 0;
+	const o = new JumpOverlay(fakeTui(24) as never, theme as never, keybindings as never, STOPS, () => closed++, () => {});
+	o.dispose();
+	o.handleInput("q");
+	assert.equal(closed, 1);
+});

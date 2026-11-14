@@ -9,7 +9,7 @@ A `/tree`-style index of every stop in the current pi conversation, in a bottom 
    ◆ text   Running the tests first.
 ▸  ⚙ bash   npm test -- auth
    ◆ text   Fixed. The mock was returning…
- ↑↓ step · ←→ user msgs · enter/esc close
+ ↑↓/jk step · ←→/{} user msgs · g/G ends · enter/esc/q close
 ```
 
 ## Use
@@ -17,9 +17,10 @@ A `/tree`-style index of every stop in the current pi conversation, in a bottom 
 | Key | Action |
 |---|---|
 | `/jump` or `ctrl+shift+j` | Open the index (the transcript doesn't move until you do) |
-| `↑` / `↓`, `pgup` / `pgdn`, `home` / `end` | Move and jump: the stop is placed near the top of the transcript, with 1 line of context above |
-| `←` / `→` | Jump to the previous / next user message, skipping the entries under it |
-| `enter` / `esc` | Close, leaving the transcript where it is |
+| `↑` / `↓` or `k` / `j`, `pgup` / `pgdn` | Move and jump: the stop is placed near the top of the transcript, with 1 line of context above |
+| `home` / `end` or `g` / `G` | Jump to the first / last stop |
+| `←` / `→` or `{` / `}` | Jump to the previous / next user message, skipping the entries under it |
+| `enter` / `esc` or `q` | Close, leaving the transcript where it is |
 
 Stops: user messages `›`, skill invocations `✦`, thinking `∴` (one per run of consecutive thinking blocks; a hidden run shows its hidden-thinking label, or is skipped when that label is empty), assistant text `◆`, tool calls `⚙` (scroll down from a call to see its result), `!bash` executions `$`, compaction summaries `≡`, branch summaries `↳` (from `/tree` branch switches), and visible extension messages `◇` (labelled with their message type, e.g. `◇ subagent`). The startup header is skipped.
 
