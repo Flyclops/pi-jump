@@ -4,6 +4,16 @@
   "private": true,
   "type": "module",
   "description": "Pi extension: a /tree-style index of every conversation stop that jumps the fullscreen transcript as you move",
+  "license": "MIT",
+  "author": "Flyclops",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Flyclops/pi-jump.git"
+  },
+  "homepage": "https://github.com/Flyclops/pi-jump#readme",
+  "bugs": {
+    "url": "https://github.com/Flyclops/pi-jump/issues"
+  },
   "keywords": [
     "pi-package"
   ],
